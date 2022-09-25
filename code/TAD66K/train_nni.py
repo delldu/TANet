@@ -19,6 +19,8 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from collections import OrderedDict
 from nni.utils import merge_parameter
+import pdb
+
 opt = option.init()
 device = torch.device("cuda")
 MOBILE_NET_V2_UTR = 'https://s3-us-west-1.amazonaws.com/models-nima/mobilenetv2.pth.tar'
@@ -178,6 +180,7 @@ def Attention(x):
 def MV2():
     model = mobile_net_v2()
     model = nn.Sequential(*list(model.children())[:-1])
+
     return model
 
 class L5(nn.Module):
@@ -216,7 +219,7 @@ class L1(nn.Module):
         res_last_out_w = self.last_out_w(x)
         res_last_out_b = self.last_out_b(x)
         param_out = {}
-        param_out['res_last_out_w'] = res_last_out_w
+        param_out['res_last_out_w'] = res_last_out_w # xxxx8888
         param_out['res_last_out_b'] = res_last_out_b
         return param_out
 
@@ -262,6 +265,7 @@ class TargetFC(nn.Module):
         out = F.linear(input_, self.weight, self.bias)
         return out
 
+# xxxx8888
 class TANet(nn.Module):
     def __init__(self):
         super(TANet, self).__init__()
@@ -415,11 +419,12 @@ def start_train(opt):
     writer.close()
 
 if __name__ =="__main__":
-    import warnings
-    warnings.filterwarnings('ignore')
-    print(os.getcwd())
-    tuner_params = nni.get_next_parameter()
-    params = vars(merge_parameter(opt, tuner_params))
-    start_train(params)
+    # import warnings
+    # warnings.filterwarnings('ignore')
+    # print(os.getcwd())
+    # tuner_params = nni.get_next_parameter()
+    # params = vars(merge_parameter(opt, tuner_params))
+    # start_train(params)
 
-
+    model = MV2()
+    pdb.set_trace()
