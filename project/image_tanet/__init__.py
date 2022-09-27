@@ -12,7 +12,6 @@
 __version__ = "1.0.0"
 
 import os
-import time
 from tqdm import tqdm
 import torch
 
@@ -37,19 +36,25 @@ def get_model():
     model = model.to(device)
     model.eval()
 
-    # model = torch.jit.script(model)
+    print(f"Running on {device} ...")
+    model = torch.jit.script(model)
 
-    # todos.data.mkdir("output")
-    # if not os.path.exists("output/image_tanet.torch"):
-    #     model.save("output/image_tanet.torch")
+    todos.data.mkdir("output")
+    if not os.path.exists("output/image_tanet.torch"):
+        model.save("output/image_tanet.torch")
 
     return model, device
 
 
 def model_forward(model, device, input_tensor):
     input_tensor = input_tensor.to(device)
-    with torch.no_grad():
-        output_tensor = model(input_tensor)
+    # with torch.no_grad():
+    #     output_tensor = model(input_tensor)
+
+    torch.cuda.synchronize()
+    with torch.jit.optimized_execution(False):
+        output_tensor = todos.model.forward(model, device, input_tensor)
+    torch.cuda.synchronize()
 
     return output_tensor
 
@@ -94,6 +99,8 @@ def image_predict(input_files, output_dir):
     image_filenames = todos.data.load_files(input_files)
 
     # start predict
+    output_scores = []
+
     progress_bar = tqdm(total=len(image_filenames))
     for filename in image_filenames:
         progress_bar.update(1)
@@ -105,11 +112,14 @@ def image_predict(input_files, output_dir):
         # pytorch recommand clone.detach instead of torch.Tensor(input_tensor)
         orig_tensor = input_tensor.clone().detach()
         predict_tensor = model_forward(model, device, input_tensor)
-        print(filename, predict_tensor.item())
+        output_scores.append([filename, predict_tensor.item()])
+        # print(filename, predict_tensor.item())
 
         # output_file = f"{output_dir}/{os.path.basename(filename)}"
 
         # todos.data.save_tensor([orig_tensor, predict_tensor], output_file)
+    for fs in output_scores:
+        print(f"{fs[0]} -- {fs[1]:.4f}")
 
 
 def video_service(input_file, output_file, targ):

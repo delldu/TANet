@@ -235,7 +235,7 @@ class TANet(nn.Module):
         # RGB-distribution-aware attention Network
         x_rgb = self.avg_RGB(x)
         x_rgb = self_attention(x_rgb)
-        x_rgb = self.head_rgb(x_rgb.view(x_rgb.size(0), -1)) #size() -- [1, 10]
+        x_rgb = self.head_rgb(x_rgb.view(x_rgb.size(0), -1))  # size() -- [1, 10]
 
         # Theme Understanding Network
         last_out = self.res365_last(x)  # size() -- [1, 365]
@@ -243,11 +243,11 @@ class TANet(nn.Module):
         x2 = self.tygertnet(last_out, out_w, out_b)
         x2 = x2.unsqueeze(dim=2)
         x2 = self.avg(x2)
-        x2 = x2.squeeze(dim=2) # size() -- [1, 10]
+        x2 = x2.squeeze(dim=2)  # size() -- [1, 10]
 
         # Aesthetics Perceiving Network
-        x1 = self.mobileNet(x) # size() -- [1, 10]
-        x = torch.cat([x1, x2, x_rgb], dim=1) # size() -- [1, 30]
+        x1 = self.mobileNet(x)  # size() -- [1, 10]
+        x = torch.cat([x1, x2, x_rgb], dim=1)  # size() -- [1, 30]
 
         x = self.head(x)
         return x.clamp(0.0, 1.0) * 10.0
