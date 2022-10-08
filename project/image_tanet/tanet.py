@@ -147,7 +147,7 @@ def MV2():
     #     state_dict = torch.load(pretrained_model, map_location=lambda storage, loc: storage)
     #     model.load_state_dict(state_dict)
 
-    # remove last classifer ?
+    # remove last classifer
     model = nn.Sequential(*list(model.children())[:-1])
 
     return model

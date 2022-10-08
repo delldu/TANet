@@ -46,19 +46,6 @@ def get_model():
     return model, device
 
 
-def model_forward(model, device, input_tensor):
-    input_tensor = input_tensor.to(device)
-    # with torch.no_grad():
-    #     output_tensor = model(input_tensor)
-
-    torch.cuda.synchronize()
-    with torch.jit.optimized_execution(False):
-        output_tensor = todos.model.forward(model, device, input_tensor)
-    torch.cuda.synchronize()
-
-    return output_tensor
-
-
 def image_client(name, input_files, output_dir):
     redo = redos.Redos(name)
     cmd = redos.image.Command()
@@ -78,7 +65,7 @@ def image_server(name, host="localhost", port=6379):
         print(f"  tanet {input_file} ...")
         try:
             input_tensor = todos.data.load_tensor(input_file)
-            output_tensor = model_forward(model, device, input_tensor)
+            output_tensor = todos.model.forward(model, device, input_tensor)
             todos.data.save_tensor(output_tensor, output_file)
             return True
         except Exception as e:
@@ -88,10 +75,7 @@ def image_server(name, host="localhost", port=6379):
     return redos.image.service(name, "image_tanet", do_service, host, port)
 
 
-def image_predict(input_files, output_dir):
-    # Create directory to store result
-    todos.data.mkdir(output_dir)
-
+def image_predict(input_files):
     # load model
     model, device = get_model()
 
@@ -109,17 +93,14 @@ def image_predict(input_files, output_dir):
         input_tensor = todos.data.load_tensor(filename)
         input_tensor = todos.data.resize_tensor(input_tensor, 224, 224)
 
-        # pytorch recommand clone.detach instead of torch.Tensor(input_tensor)
-        orig_tensor = input_tensor.clone().detach()
-        predict_tensor = model_forward(model, device, input_tensor)
+        predict_tensor = todos.model.forward(model, device, input_tensor)
         output_scores.append([filename, predict_tensor.item()])
-        # print(filename, predict_tensor.item())
+    progress_bar.close()
 
-        # output_file = f"{output_dir}/{os.path.basename(filename)}"
-
-        # todos.data.save_tensor([orig_tensor, predict_tensor], output_file)
     for fs in output_scores:
         print(f"{fs[0]} -- {fs[1]:.4f}")
+
+    todos.model.reset_device()
 
 
 def video_service(input_file, output_file, targ):
@@ -147,7 +128,7 @@ def video_service(input_file, output_file, targ):
 
         # convert tensor from 1x4xHxW to 1x3xHxW
         input_tensor = input_tensor[:, 0:3, :, :]
-        output_tensor = model_forward(model, device, input_tensor)
+        output_tensor = todos.model.forward(model, device, input_tensor)
 
         temp_output_file = "{}/{:06d}.png".format(output_dir, no)
         todos.data.save_tensor(output_tensor, temp_output_file)
