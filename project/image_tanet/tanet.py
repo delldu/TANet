@@ -225,6 +225,9 @@ class TANet(nn.Module):
         self.head = nn.Sequential(nn.ReLU(), nn.Dropout(p=0.75), nn.Linear(30, 1), nn.Sigmoid())
 
     def forward(self, x):
+        # change resize to 224x224
+        x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+
         # x need normalize !!!
         B, C, H, W = x.size()
         mean = [0.485, 0.456, 0.406]

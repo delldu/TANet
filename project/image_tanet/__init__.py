@@ -91,7 +91,6 @@ def image_predict(input_files):
 
         # orig input
         input_tensor = todos.data.load_tensor(filename)
-        input_tensor = todos.data.resize_tensor(input_tensor, 224, 224)
 
         predict_tensor = todos.model.forward(model, device, input_tensor)
         output_scores.append([filename, predict_tensor.item()])
