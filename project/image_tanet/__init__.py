@@ -22,6 +22,25 @@ from . import tanet
 import pdb
 
 
+def get_tvm_model():
+    """Create model."""
+
+    model_path = "models/image_tanet.pth"
+    cdir = os.path.dirname(__file__)
+    checkpoint = model_path if cdir == "" else cdir + "/" + model_path
+
+    model = tanet.TANet()
+    todos.model.load(model, checkpoint)
+
+    device = todos.model.get_device()
+    model = model.to(device)
+    model.eval()
+
+    print(f"Running on {device} ...")
+
+    return model, device
+
+
 def get_model():
     """Create model."""
 
