@@ -18,27 +18,24 @@ import torch
 import todos
 import image_tanet
 
+SO_B, SO_C, SO_H, SO_W = 1, 3, 224, 224
 # NotImplementedError: The following operators are not implemented: ['aten::copy_']
+
 
 def compile():
     model, device = image_tanet.get_tvm_model()
-    SO_B, SO_C, SO_H, SO_W = 1, 3, 224, 224
 
     todos.data.mkdir("output")
     if not os.path.exists("output/image_tanet.so"):
         input = torch.randn(SO_B, SO_C, SO_H, SO_W)
         todos.tvmod.compile(model, device, input, "output/image_tanet.so")
+    todos.model.reset_device()
 
 
-def predict(input_files, output_dir):
-    model, device = image_tanet.get_tvm_model()
-    SO_B, SO_C, SO_H, SO_W = 1, 3, model.MAX_H, model.MAX_W
-
-    # Create directory to store result
-    todos.data.mkdir(output_dir)
-
+def predict(input_files):
     # load model
-    tvm_model = todos.tvmod.load("output/image_tanet.so", "cuda")
+    device = todos.model.get_device()
+    tvm_model = todos.tvmod.load("output/image_tanet.so", str(device))
 
     # load files
     image_filenames = todos.data.load_files(input_files)

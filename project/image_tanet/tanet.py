@@ -14,6 +14,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+import torchvision.transforms as T
+
 from typing import List
 import pdb
 
@@ -223,16 +225,19 @@ class TANet(nn.Module):
 
         self.head = nn.Sequential(nn.ReLU(), nn.Dropout(p=0.75), nn.Linear(30, 1), nn.Sigmoid())
 
+        self.normal = T.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), inplace=False)
+
     def forward(self, x):
         # change resize to 224x224
         x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
 
         # x need normalize !!!
-        B, C, H, W = x.size()
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
-        for i in range(3):
-            x[:, i, :, :] = (x[:, i, :, :] - mean[i]) / std[i]
+        # B, C, H, W = x.size()
+        # mean = [0.485, 0.456, 0.406]
+        # std = [0.229, 0.224, 0.225]
+        # for i in range(3):
+        #     x[:, i, :, :] = (x[:, i, :, :] - mean[i]) / std[i]
+        x = self.normal(x)
 
         # RGB-distribution-aware attention Network
         x_rgb = self.avg_RGB(x)
@@ -246,6 +251,10 @@ class TANet(nn.Module):
         x2 = x2.unsqueeze(dim=2)
         x2 = self.avg(x2)
         x2 = x2.squeeze(dim=2)  # size() -- [1, 10]
+
+        # x2.size --- 1:  [1, 1, 1]
+        # x2.size --- 2:  [1, 10, 1]
+        # x2.size --- 3:  [1, 10]
 
         # Aesthetics Perceiving Network
         x1 = self.mobileNet(x)  # size() -- [1, 10]
