@@ -19,7 +19,7 @@ import todos
 from . import tanet
 
 import pdb
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 
 def get_model():
@@ -58,9 +58,11 @@ def image_predict(input_files, output_dir):
     # load files
     image_filenames = todos.data.load_files(input_files)
 
+    ttf_path = "/usr/share/fonts/truetype/ubuntu/Ubuntu-C.ttf"
+    ttf = ImageFont.truetype(ttf_path, 32)
+
     # start predict
     output_scores = []
-
     progress_bar = tqdm(total=len(image_filenames))
     for filename in image_filenames:
         progress_bar.update(1)
@@ -69,11 +71,13 @@ def image_predict(input_files, output_dir):
         input_tensor = todos.data.load_tensor(filename)
 
         predict_tensor = todos.model.forward(model, device, input_tensor)
+        # if predict_tensor.item() < 6.0:
+        #     continue
 
         output_file = f"{output_dir}/{os.path.basename(filename)}"
         image = Image.open(filename)
         draw = ImageDraw.Draw(image)
-        draw.text((10, 10), f"{predict_tensor.item(): .4f}", fill=(255, 0, 0, 128))
+        draw.text((10, 10), f"{predict_tensor.item(): .4f}", fill="red", font=ttf)
         image.save(output_file)
 
         output_scores.append([filename, predict_tensor.item()])
