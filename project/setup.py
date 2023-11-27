@@ -2,7 +2,7 @@
 #
 # /************************************************************************************
 # ***
-# ***    Copyright Dell 2022(18588220928@163.com), All Rights Reserved.
+# ***    Copyright Dell 2022-2024(18588220928@163.com), All Rights Reserved.
 # ***
 # ***    File Author: Dell, 2022年 09月 25日 星期日 11:31:05 CST
 # ***
@@ -15,7 +15,7 @@ with open("README.md", "r") as file:
     long_description = file.read()
 
 setup(
-    name="image_tanet",
+    name="image_aa",
     version="1.0.0",
     author="Dell Du",
     author_email="18588220928@163.com",
@@ -23,8 +23,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/delldu/TANet.git",
-    packages=["image_tanet"],
-    package_data={"image_tanet": ["models/image_tanet.pth"]},
+    packages=["image_aa"],
+    package_data={"image_aa": ["models/image_aa.pth"]},
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -36,8 +36,6 @@ setup(
         "torchvision >= 0.10.0",
         "Pillow >= 7.2.0",
         "numpy >= 1.19.5",
-        "einops >= 0.3.0",
-        "redos >= 1.0.0",
         "todos >= 1.0.0",
     ],
 )

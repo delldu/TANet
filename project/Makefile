@@ -13,7 +13,7 @@ install:
 	python setup.py install
 
 uninstall:
-	pip uninstall image_tanet
+	pip uninstall image_aa
 
 clean:
-	rm -rf build dist image_tanet.egg-info __pycache__
+	rm -rf build dist image_aa.egg-info __pycache__

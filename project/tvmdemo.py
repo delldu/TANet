@@ -2,7 +2,7 @@
 #
 # /************************************************************************************
 # ***
-# ***    Copyright Dell 2020-2022(18588220928@163.com), All Rights Reserved.
+# ***    Copyright Dell 2020-2024(18588220928@163.com), All Rights Reserved.
 # ***
 # ***    File Author: Dell, 2020年 12月 28日 星期一 14:29:37 CST
 # ***
@@ -16,26 +16,26 @@ from tqdm import tqdm
 
 import torch
 import todos
-import image_tanet
+import image_aa
 
 SO_B, SO_C, SO_H, SO_W = 1, 3, 224, 224
 # NotImplementedError: The following operators are not implemented: ['aten::copy_']
 
 
 def compile():
-    model, device = image_tanet.get_tvm_model()
+    model, device = image_aa.get_model()
 
     todos.data.mkdir("output")
-    if not os.path.exists("output/image_tanet.so"):
+    if not os.path.exists("output/image_aa.so"):
         input = torch.randn(SO_B, SO_C, SO_H, SO_W)
-        todos.tvmod.compile(model, device, input, "output/image_tanet.so")
+        todos.tvmod.compile(model, device, input, "output/image_aa.so")
     todos.model.reset_device()
 
 
 def predict(input_files):
     # load model
     device = todos.model.get_device()
-    tvm_model = todos.tvmod.load("output/image_tanet.so", str(device))
+    tvm_model = todos.tvmod.load("output/image_aa.so", str(device))
 
     # load files
     image_filenames = todos.data.load_files(input_files)

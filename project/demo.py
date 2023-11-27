@@ -1,6 +1,3 @@
-import image_tanet
+import image_aa
 
-# image_tanet.image_client("TAI", "images/*.png", "output")
-# image_tanet.image_server("TAI")
-
-image_tanet.image_predict("images/*.png")
+image_aa.image_predict("images/*.png", "output")

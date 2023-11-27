@@ -3,13 +3,13 @@
 #
 # /************************************************************************************
 # ***
-# ***    Copyright 2022 Dell(18588220928@163.com), All Rights Reserved.
+# ***    Copyright 2022-2024 Dell(18588220928@163.com), All Rights Reserved.
 # ***
 # ***    File Author: Dell, 2022年 09月 25日 星期日 11:31:05 CST
 # ***
 # ************************************************************************************/
 #
-# import os
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,16 +21,24 @@ import pdb
 
 
 def conv_bn(inp, oup, stride):
-    return nn.Sequential(nn.Conv2d(inp, oup, 3, stride, 1, bias=False), nn.BatchNorm2d(oup), nn.ReLU(inplace=True))
+    return nn.Sequential(
+            nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
+            nn.BatchNorm2d(oup),
+            nn.ReLU(inplace=True),
+        )
 
 
 def conv_1x1_bn(inp, oup):
-    return nn.Sequential(nn.Conv2d(inp, oup, 1, 1, 0, bias=False), nn.BatchNorm2d(oup), nn.ReLU(inplace=True))
+    return nn.Sequential(
+            nn.Conv2d(inp, oup, 1, 1, 0, bias=False), 
+            nn.BatchNorm2d(oup), 
+            nn.ReLU(inplace=True),
+        )
 
 
 class InvertedResidual(nn.Module):
     def __init__(self, inp, oup, stride, expand_ratio):
-        super(InvertedResidual, self).__init__()
+        super().__init__()
         self.stride = stride
         assert stride in [1, 2]
 
@@ -59,7 +67,7 @@ class InvertedResidual(nn.Module):
 
 class MobileNetV2(nn.Module):
     def __init__(self, n_class=1000, input_size=224, width_mult=1.0):
-        super(MobileNetV2, self).__init__()
+        super().__init__()
         # setting of inverted residual blocks
         self.interverted_residual_setting = [
             # t, c, n, s
@@ -94,6 +102,7 @@ class MobileNetV2(nn.Module):
 
         # avgpool
         self.avgpool = nn.AvgPool2d(input_size // 32)
+        # AvgPool2d(kernel_size=7, stride=7, padding=0)
 
         # building classifier
         self.classifier = nn.Sequential(
@@ -102,6 +111,8 @@ class MobileNetV2(nn.Module):
         )
 
     def forward(self, x):
+        pdb.set_trace()
+
         x = self.features(x)
         x = self.avgpool(x)
         x = x.view(-1, self.last_channel)
@@ -113,8 +124,7 @@ def resnet18_places365():
     # last_model = models.resnet18(pretrained=False)
     # last_model.fc.out_features = 365
 
-    arch = "resnet18"
-    last_model = models.__dict__[arch](num_classes=365)
+    last_model = models.__dict__["resnet18"](num_classes=365)
 
     # pretrained_model = "models/resnet18_places365.pth"
     # if os.path.exists(pretrained_model):
@@ -156,7 +166,7 @@ def MV2():
 
 class L5(nn.Module):
     def __init__(self):
-        super(L5, self).__init__()
+        super().__init__()
         self.base_model = MV2()
 
         self.head = nn.Sequential(
@@ -167,7 +177,10 @@ class L5(nn.Module):
         )
 
     def forward(self, x):
+        # x.size() -- 1, 3, 224, 224
         x = self.base_model(x)
+        # x.size() -- [1, 1280, 1, 1]
+
         x = x.view(x.size(0), -1)
         x = self.head(x)
         return x
@@ -175,7 +188,7 @@ class L5(nn.Module):
 
 class L1(nn.Module):
     def __init__(self):
-        super(L1, self).__init__()
+        super().__init__()
 
         self.last_out_w = nn.Linear(365, 100)
         self.last_out_b = nn.Linear(365, 1)
@@ -185,11 +198,10 @@ class L1(nn.Module):
         out_b = self.last_out_b(x)
         return out_w, out_b
 
-
 # L3
 class TargetNet(nn.Module):
     def __init__(self):
-        super(TargetNet, self).__init__()
+        super().__init__()
         # L2
         self.fc1 = nn.Linear(365, 100)
         self.bn1 = nn.BatchNorm1d(100)
@@ -197,7 +209,6 @@ class TargetNet(nn.Module):
         self.drop1 = nn.Dropout(1 - 0.5)
 
         self.relu7 = nn.PReLU()
-        # self.sig = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x, w, b):
@@ -209,7 +220,11 @@ class TargetNet(nn.Module):
 
 class TANet(nn.Module):
     def __init__(self):
-        super(TANet, self).__init__()
+        super().__init__()
+        self.MAX_H = 224
+        self.MAX_W = 224
+        self.MAX_TIMES = 1
+
         # Theme Understanding Network
         self.res365_last = resnet18_places365()
         self.hypernet = L1()
@@ -221,26 +236,39 @@ class TANet(nn.Module):
 
         # RGB-distribution-aware attention Network
         self.avg_RGB = nn.AdaptiveAvgPool2d((12, 12))
-        self.head_rgb = nn.Sequential(nn.ReLU(), nn.Dropout(p=0.75), nn.Linear(20736, 10), nn.Softmax(dim=1))
 
-        self.head = nn.Sequential(nn.ReLU(), nn.Dropout(p=0.75), nn.Linear(30, 1), nn.Sigmoid())
+        self.head_rgb = nn.Sequential(
+            nn.ReLU(), nn.Dropout(p=0.75), 
+            nn.Linear(20736, 10), 
+            nn.Softmax(dim=1),
+        )
+
+        self.head = nn.Sequential(
+            nn.ReLU(), 
+            nn.Dropout(p=0.75), 
+            nn.Linear(30, 1), 
+            nn.Sigmoid(),
+        )
 
         self.normal = T.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), inplace=False)
+        self.load_weights()
+
+
+    def load_weights(self, model_path="models/image_aa.pth"):
+        cdir = os.path.dirname(__file__)
+        checkpoint = model_path if cdir == "" else cdir + "/" + model_path
+        self.load_state_dict(torch.load(checkpoint))
+
 
     def forward(self, x):
-        # change resize to 224x224
+        # preprocess
         x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
-
-        # x need normalize !!!
-        # B, C, H, W = x.size()
-        # mean = [0.485, 0.456, 0.406]
-        # std = [0.229, 0.224, 0.225]
-        # for i in range(3):
-        #     x[:, i, :, :] = (x[:, i, :, :] - mean[i]) / std[i]
         x = self.normal(x)
 
         # RGB-distribution-aware attention Network
-        x_rgb = self.avg_RGB(x)
+        # resize to 228x228 for self.avg_RGB, 228/12 == 19, 224/12=18.xx, onnx does not support later
+        x1 = F.interpolate(x, size=(228, 228), mode="bilinear", align_corners=False)
+        x_rgb = self.avg_RGB(x1)
         x_rgb = self_attention(x_rgb)
         x_rgb = self.head_rgb(x_rgb.view(x_rgb.size(0), -1))  # size() -- [1, 10]
 
@@ -249,12 +277,11 @@ class TANet(nn.Module):
         out_w, out_b = self.hypernet(last_out)
         x2 = self.tygertnet(last_out, out_w, out_b)
         x2 = x2.unsqueeze(dim=2)
-        x2 = self.avg(x2)
+        # because x2.size() is [1, 1, 1], x2 = self.avg(x2) does not support in onnx, 
+        # so here we use x2.expand(1, 10, 1)
+        # x2 = self.avg(x2)
+        x2 = x2.expand(1, 10, 1)
         x2 = x2.squeeze(dim=2)  # size() -- [1, 10]
-
-        # x2.size --- 1:  [1, 1, 1]
-        # x2.size --- 2:  [1, 10, 1]
-        # x2.size --- 3:  [1, 10]
 
         # Aesthetics Perceiving Network
         x1 = self.mobileNet(x)  # size() -- [1, 10]
