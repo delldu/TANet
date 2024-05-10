@@ -221,8 +221,8 @@ class TargetNet(nn.Module):
 class TANet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.MAX_H = 224
-        self.MAX_W = 224
+        self.MAX_H = 228 # FIXED, DO NOT Change !!!
+        self.MAX_W = 228
         self.MAX_TIMES = 1
 
         # Theme Understanding Network
@@ -262,13 +262,13 @@ class TANet(nn.Module):
 
     def forward(self, x):
         # preprocess
-        x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+        # x = F.interpolate(x, size=(self.MAX_H, self.MAX_H), mode="bilinear", align_corners=False)
         x = self.normal(x)
 
         # RGB-distribution-aware attention Network
         # resize to 228x228 for self.avg_RGB, 228/12 == 19, 224/12=18.xx, onnx does not support later
-        x1 = F.interpolate(x, size=(228, 228), mode="bilinear", align_corners=False)
-        x_rgb = self.avg_RGB(x1)
+        # x1 = F.interpolate(x, size=(228, 228), mode="bilinear", align_corners=False)
+        x_rgb = self.avg_RGB(x)
         x_rgb = self_attention(x_rgb)
         x_rgb = self.head_rgb(x_rgb.view(x_rgb.size(0), -1))  # size() -- [1, 10]
 
@@ -288,4 +288,4 @@ class TANet(nn.Module):
         x = torch.cat([x1, x2, x_rgb], dim=1)  # size() -- [1, 30]
 
         x = self.head(x)
-        return x.clamp(0.0, 1.0) * 10.0
+        return x.view(1, 1, 1, 1).clamp(0.0, 1.0) * 10.0

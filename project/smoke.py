@@ -75,12 +75,13 @@ def export_onnx_model():
     import onnx
     import onnxruntime
     from onnxsim import simplify
+    import onnxoptimizer
 
     print("Export onnx model ...")
 
     # 1. Run torch model
     model, device = image_aa.get_model()
-    B, C, H, W = 1, 3, model.MAX_H, model.MAX_W
+    B, C, H, W = 1, 3, model.MAX_H, model.MAX_W # fixed 228, 228
     model.to(device)
 
 
@@ -93,9 +94,17 @@ def export_onnx_model():
     input_names = [ "input" ]
     output_names = [ "output" ]
     onnx_filename = "output/image_aa.onnx"
+    dynamic_axes = { 
+        'input' : {2: 'height', 3: 'width'}, 
+        'output' : {2: 'height', 3: 'width'} 
+    }
 
     torch.onnx.export(model, dummy_input, onnx_filename, 
-        verbose=False, input_names=input_names, output_names=output_names)
+        verbose=False, 
+        input_names=input_names, 
+        output_names=output_names,
+        # dynamic_axes=dynamic_axes,
+    )
 
     # 3. Check onnx model file
     onnx_model = onnx.load(onnx_filename)
@@ -103,6 +112,7 @@ def export_onnx_model():
 
     onnx_model, check = simplify(onnx_model)
     assert check, "Simplified ONNX model could not be validated"
+    onnx_model = onnxoptimizer.optimize(onnx_model)    
     onnx.save(onnx_model, onnx_filename)
     # print(onnx.helper.printable_graph(onnx_model.graph))
 

@@ -14,6 +14,7 @@ __version__ = "1.0.0"
 import os
 from tqdm import tqdm
 import torch
+import torch.nn.functional as F
 
 import todos
 from . import tanet
@@ -69,22 +70,23 @@ def image_predict(input_files, output_dir):
 
         # orig input
         input_tensor = todos.data.load_tensor(filename)
+        x = F.interpolate(input_tensor, size=(model.MAX_H, model.MAX_H), mode="bilinear", align_corners=False)
 
-        predict_tensor = todos.model.forward(model, device, input_tensor)
+        predict_tensor = todos.model.forward(model, device, x)
         # if predict_tensor.item() < 6.0:
         #     continue
 
         output_file = f"{output_dir}/{os.path.basename(filename)}"
         image = Image.open(filename)
         draw = ImageDraw.Draw(image)
-        draw.text((10, 10), f"{predict_tensor.item(): .4f}", fill="red", font=ttf)
+        draw.text((10, 10), f"{predict_tensor.item(): .2f}", fill="red", font=ttf)
         image.save(output_file)
 
         output_scores.append([filename, predict_tensor.item()])
     progress_bar.close()
 
     for fs in output_scores:
-        print(f"{fs[0]} -- {fs[1]:.4f}")
+        print(f"{fs[0]} -- {fs[1]:.2f}")
 
     # images/0001.png -- 6.5177
     # images/0002.png -- 5.6350
